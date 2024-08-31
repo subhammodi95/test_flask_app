@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      volumes:
+      - name: flask-app-config-volume
+        configMap:
+          name: flask-app-configmap
+      - name: flask-app-secret-volume
+        secret:
+          secretName: flask-app-secrets
+      containers:
+      - name: flask-app
+        image: subhammodi09/flask-app:latest
+        env:
+        - name: ENV_TEXT1_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: flask-app-configmap
+              key: env_text1
+        - name: ENV_TEXT2_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: flask-app-configmap
+              key: env_text2
+        - name: ENV_TEXT3_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-app-secrets
+              key: user
+        - name: ENV_TEXT4_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-app-secrets
+              key: password
+        command: ['sh', '-c', "echo ConfigMap: $(ENV_TEXT1_KEY) $(ENV_TEXT2_KEY) , SecretUser: $(ENV_TEXT3_KEY), SecretPassword: $(ENV_TEXT4_KEY), /etc/config: $(ls /etc/config/), /etc/config2: $(ls /etc/config2/) && sleep 3600"]
+        volumeMounts:
+        - name: flask-app-config-volume
+          mountPath: /etc/config
+        - name: flask-app-secret-volume
+          mountPath: /etc/config2
+        ports:
+        - containerPort: 5000
